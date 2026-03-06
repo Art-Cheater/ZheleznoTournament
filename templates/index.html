@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <!-- Основной фавикон -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='15.png') }}?v=1">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='15.png') }}?v=1">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='15.png') }}?v=1">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='15.png') }}?v=1">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Железно | Турнирная таблица</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #35322F;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #E8E8E8;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #35322F;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .logo {
+            max-width: 80%;       /* 80% от ширины контейнера */
+            max-height: 180px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            margin: 20px 0;       /* отступы сверху и снизу */
+        }
+
+        .header::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #FF4800;
+        }
+
+        .filter-section {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .filter-title {
+            color: #35322F;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .station-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #FF4800;
+            border-radius: 25px;
+            background: white;
+            color: #FF4800;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            background: #FF4800;
+            color: white;
+        }
+
+        .filter-btn.active {
+            background: #FF4800;
+            color: white;
+        }
+
+        .info-bar {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .last-update {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .leaderboard {
+            padding: 20px;
+        }
+
+        .team-row {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.8s cubic-bezier(0.25, 0.1, 0.15, 1.2);
+            position: relative;
+            border-left: 4px solid transparent;
+        }
+
+        .team-row.gold {
+            background: linear-gradient(135deg, #FFD700 0%, #FFED4E 100%);
+            border-left: 4px solid #FF4800;
+        }
+
+        .team-row.silver {
+            background: linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 100%);
+            border-left: 4px solid #FF4800;
+        }
+
+        .team-row.bronze {
+            background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+            border-left: 4px solid #FF4800;
+            color: white;
+        }
+
+        .team-row.move-up {
+            animation: moveUp 1.2s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+        }
+
+        .team-row.move-down {
+            animation: moveDown 1.2s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+        }
+
+        @keyframes moveUp {
+            0% {
+                transform: translateY(40px);
+                opacity: 0.3;
+                background: rgba(255, 72, 0, 0.1);
+            }
+            70% {
+                transform: translateY(-5px);
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+                background: white;
+            }
+        }
+
+        @keyframes moveDown {
+            0% {
+                transform: translateY(-40px);
+                opacity: 0.3;
+                background: rgba(255, 72, 0, 0.1);
+            }
+            70% {
+                transform: translateY(5px);
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+                background: white;
+            }
+        }
+
+        .team-row.gold.move-up,
+        .team-row.gold.move-down {
+            background: linear-gradient(135deg, #FFD700 0%, #FFED4E 100%);
+        }
+
+        .team-row.silver.move-up,
+        .team-row.silver.move-down {
+            background: linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 100%);
+        }
+
+        .team-row.bronze.move-up,
+        .team-row.bronze.move-down {
+            background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+            color: white;
+        }
+
+        .position {
+            width: 50px;
+            height: 50px;
+            background: #FF4800;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.3em;
+            margin-right: 20px;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .team-info {
+            flex: 1;
+        }
+
+        .team-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #35322F;
+        }
+
+        .team-points {
+            font-size: 0.9em;
+            opacity: 0.8;
+            color: #35322F;
+        }
+
+        .points-badge {
+            background: #FF4800;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.3em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .no-teams {
+            text-align: center;
+            padding: 40px;
+            color: #35322F;
+            font-style: italic;
+        }
+
+        .current-filter {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .error-message {
+            color: #FF4800;
+            text-align: center;
+            padding: 10px;
+            background: #fff5f0;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='gray15.png') }}" alt="ЖЕЛЕЗНО" class="logo" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iODAiPjx0ZXh0IHg9IjEwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjRkY0ODAwIj5K0JXQm9CZ0J3QoDwvdGV4dD48L3N2Zz4=';">
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-title">🔍 Фильтр по станциям:</div>
+            <div class="station-filters" id="stationFilters">
+                <button class="filter-btn active" data-station="all">Все станции</button>
+                <!-- Станции будут загружены динамически -->
+            </div>
+            <div class="current-filter" id="currentFilter">Показаны баллы со всех станций</div>
+        </div>
+
+        <div class="info-bar">
+            <div class="last-update" id="lastUpdate"></div>
+        </div>
+
+        <div class="leaderboard" id="leaderboard">
+            <!-- Здесь будут команды -->
+        </div>
+    </div>
+
+    <script>
+        let previousTeams = [];
+        let audioContext = null;
+        let autoRefreshInterval = null;
+        let currentStationFilter = 'all';
+        let stations = [];
+        let allTeamsData = [];
+        let lastUpdateTime = null;
+
+        async function loadStations() {
+            try {
+                const response = await fetch('/api/stations');
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки станций');
+                }
+                stations = await response.json();
+                
+                const filterContainer = document.getElementById('stationFilters');
+                stations.forEach(station => {
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn';
+                    btn.dataset.station = station.id;
+                    btn.textContent = station.name;
+                    btn.onclick = () => selectStation(station.id, station.name);
+                    filterContainer.appendChild(btn);
+                });
+            } catch (error) {
+                console.error('Ошибка при загрузке станций:', error);
+                const filterContainer = document.getElementById('stationFilters');
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'error-message';
+                errorMsg.textContent = 'Не удалось загрузить станции';
+                filterContainer.appendChild(errorMsg);
+            }
+        }
+
+        function selectStation(stationId, stationName) {
+            currentStationFilter = stationId;
+            
+            // Обновляем активный класс у кнопок
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.station == stationId) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            document.getElementById('currentFilter').textContent = 
+                stationId === 'all' ? 'Показаны баллы со всех станций' : `Показаны баллы только со станции: ${stationName}`;
+            
+            // Сбрасываем предыдущие данные при смене фильтра
+            previousTeams = [];
+            refreshData();
+        }
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        }
+
+        function playSound(type) {
+            try {
+                const context = initAudio();
+                if (context.state === 'suspended') {
+                    context.resume();
+                }
+                
+                const oscillator = context.createOscillator();
+                const gainNode = context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(context.destination);
+                
+                if (type === 'up') {
+                    oscillator.frequency.setValueAtTime(800, context.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1200, context.currentTime + 0.2);
+                } else {
+                    oscillator.frequency.setValueAtTime(600, context.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(300, context.currentTime + 0.2);
+                }
+                
+                gainNode.gain.setValueAtTime(0.2, context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.2);
+                
+                oscillator.start(context.currentTime);
+                oscillator.stop(context.currentTime + 0.2);
+            } catch (e) {
+                console.log('Аудио не поддерживается');
+            }
+        }
+
+        async function refreshData() {
+            try {
+                const url = currentStationFilter === 'all' 
+                    ? '/api/scores' 
+                    : `/api/scores?station=${currentStationFilter}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки данных');
+                }
+                const teams = await response.json();
+                
+                allTeamsData = teams;
+                lastUpdateTime = new Date();
+                
+                // Если есть предыдущие данные, проверяем изменения
+                if (previousTeams.length > 0) {
+                    const changes = findPositionChanges(previousTeams, teams);
+                    
+                    if (changes.length > 0) {
+                        console.log('Обнаружены изменения в рейтинге:', changes);
+                        changes.forEach(change => {
+                            playSound(change.direction);
+                        });
+                        updateLeaderboard(teams, changes);
+                    } else {
+                        updateLeaderboard(teams, []);
+                    }
+                } else {
+                    updateLeaderboard(teams, []);
+                }
+                
+                document.getElementById('lastUpdate').textContent = 
+                    'Последнее обновление: ' + lastUpdateTime.toLocaleTimeString();
+                
+                previousTeams = JSON.parse(JSON.stringify(teams));
+                
+            } catch (error) {
+                console.error('Ошибка при загрузке данных:', error);
+                document.getElementById('leaderboard').innerHTML = 
+                    '<div class="error-message">Ошибка при загрузке данных</div>';
+            }
+        }
+
+        function findPositionChanges(oldTeams, newTeams) {
+            if (oldTeams.length === 0) return [];
+            
+            const changes = [];
+            const oldPositions = {};
+            const newPositions = {};
+            
+            oldTeams.forEach((team, index) => {
+                oldPositions[team.id] = index;
+            });
+            
+            newTeams.forEach((team, index) => {
+                newPositions[team.id] = index;
+            });
+            
+            newTeams.forEach((team, newIndex) => {
+                const oldIndex = oldPositions[team.id];
+                
+                if (oldIndex !== undefined && oldIndex !== newIndex) {
+                    changes.push({
+                        id: team.id,
+                        direction: newIndex < oldIndex ? 'up' : 'down',
+                        oldPosition: oldIndex + 1,
+                        newPosition: newIndex + 1
+                    });
+                }
+            });
+            
+            newTeams.forEach((team, newIndex) => {
+                if (oldPositions[team.id] === undefined) {
+                    changes.push({
+                        id: team.id,
+                        direction: 'up',
+                        isNew: true,
+                        newPosition: newIndex + 1
+                    });
+                }
+            });
+            
+            return changes;
+        }
+
+        function updateLeaderboard(teams, changes) {
+            const leaderboard = document.getElementById('leaderboard');
+            
+            if (teams.length === 0) {
+                leaderboard.innerHTML = '<div class="no-teams">🏆 Пока нет команд для отображения</div>';
+                return;
+            }
+            
+            let html = '';
+            teams.forEach((team, index) => {
+                const position = index + 1;
+                let medalClass = '';
+                
+                if (position === 1) medalClass = 'gold';
+                else if (position === 2) medalClass = 'silver';
+                else if (position === 3) medalClass = 'bronze';
+                
+                const change = changes.find(c => c.id === team.id);
+                const animationClass = change ? ` move-${change.direction}` : '';
+                
+                html += `
+                    <div class="team-row${medalClass ? ' ' + medalClass : ''}${animationClass}" 
+                         data-team-id="${team.id}">
+                        <div class="position">${position}</div>
+                        <div class="team-info">
+                            <div class="team-name">${team.name}</div>
+                            <div class="team-points">всего баллов</div>
+                        </div>
+                        <div class="points-badge">${team.points} pts</div>
+                    </div>
+                `;
+            });
+            
+            leaderboard.innerHTML = html;
+        }
+
+        function setupAutoRefresh() {
+            // Запускаем автообновление каждые 5 секунд
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            autoRefreshInterval = setInterval(refreshData, 5000);
+            console.log('🔄 Автообновление запущено (интервал 5 сек)');
+        }
+
+        // Добавляем обработчик для кнопки "Все станции"
+        document.querySelector('[data-station="all"]').onclick = () => {
+            selectStation('all', 'Все станции');
+        };
+
+        // Инициализация
+        window.onload = async () => {
+            console.log('Страница загружена, инициализация...');
+            await loadStations();
+            await refreshData();
+            setupAutoRefresh();
+            
+            // Добавляем обработчик видимости страницы
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    console.log('Вкладка активна, проверяем обновления...');
+                    refreshData();
+                }
+            });
+        };
+    </script>
+</body>
+</html>

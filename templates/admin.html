@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='15.png') }}?v=1">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='15.png') }}?v=1">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='15.png') }}?v=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Железно | Админ панель</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #35322F;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #E8E8E8;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #35322F;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #FF4800;
+        }
+
+        h2 {
+            color: #35322F;
+            margin: 20px 0 15px;
+            font-size: 1.5em;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #FF4800;
+        }
+
+        .card h3 {
+            color: #35322F;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .card.warning {
+            border-left: 4px solid #FF4800;
+            background: #fff5f0;
+        }
+
+        .card.warning h3 {
+            color: #FF4800;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input, select, button {
+            padding: 10px;
+            border: 2px solid #E8E8E8;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #FF4800;
+        }
+
+        button {
+            background: #FF4800;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 72, 0, 0.4);
+        }
+
+        button.danger {
+            background: #35322F;
+        }
+
+        button.danger:hover {
+            background: #1a1a1a;
+        }
+
+        .leaderboard-preview {
+            background: #35322F;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .preview-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            color: white;
+        }
+
+        .preview-row.gold {
+            background: linear-gradient(135deg, #FFD700 0%, #FFED4E 100%);
+            color: #35322F;
+        }
+
+        .preview-row.silver {
+            background: linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 100%);
+            color: #35322F;
+        }
+
+        .preview-row.bronze {
+            background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+        }
+
+        .preview-position {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .preview-points {
+            background: #FF4800;
+            padding: 5px 10px;
+            border-radius: 15px;
+            color: white;
+        }
+
+        .scores-table {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: #FF4800;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #E8E8E8;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.9em;
+            margin: 2px;
+            display: inline-block;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-view {
+            background: #FF4800;
+            text-decoration: none;
+            text-align: center;
+            display: block;
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .refresh-note {
+            background: white;
+            border-left: 4px solid #FF4800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            color: #35322F;
+        }
+
+        .item-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #E8E8E8;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+
+        .item-row:hover {
+            background: #d8d8d8;
+        }
+
+        .delete-btn {
+            background: #FF4800;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .delete-btn:hover {
+            background: #e04000;
+        }
+
+        .delete-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .delete-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .delete-option button {
+            padding: 5px 15px;
+            font-size: 0.9em;
+        }
+
+        .brand-badge {
+            display: inline-block;
+            background: #FF4800;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .warning-text {
+            color: #FF4800;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(53, 50, 47, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            text-align: center;
+            border-left: 4px solid #FF4800;
+        }
+
+        .modal-content h3 {
+            color: #FF4800;
+            margin-bottom: 15px;
+        }
+
+        .modal-content p {
+            margin-bottom: 20px;
+            color: #35322F;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="brand-badge">ЖЕЛЕЗНО | ДЕВЕЛОПМЕНТ СО СМЫСЛОМ</div>
+        <h1>👑 Панель администратора</h1>
+
+        <div class="refresh-note">
+            <strong>ℹ️ Важно:</strong> На главной странице можно выбрать, какие станции отображать в рейтинге!
+        </div>
+
+        <div class="card-grid">
+            <!-- Добавление команды -->
+            <div class="card">
+                <h3>➕ Добавить команду</h3>
+                <form method="post">
+                    <input type="text" name="team_name" placeholder="Название команды" required>
+                    <button type="submit">Добавить команду</button>
+                </form>
+
+                <div class="item-list">
+                    <h4>Существующие команды:</h4>
+                    {% for team in teams %}
+                    <div class="item-row">
+                        <span>{{ team[1] }}</span>
+                        <form action="/delete_team/{{ team[0] }}" method="post" style="display: inline;" onsubmit="return confirmDelete('команду {{ team[1] }}')">
+                            <button type="submit" class="delete-btn">✖</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <p>Пока нет команд</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+        <!-- Управление операторами станций -->
+        <div class="card">
+            <h3>👤 Добавить оператора станции</h3>
+            <form action="/add_operator" method="post">
+                <input type="text" name="username" placeholder="Логин оператора" required>
+                <input type="password" name="password" placeholder="Пароль" required>
+                <select name="station_id" required>
+                    <option value="">Выберите станцию</option>
+                    {% for station in stations %}
+                        <option value="{{ station[0] }}">{{ station[1] }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">➕ Добавить оператора</button>
+            </form>
+
+            <div class="item-list">
+                <h4>Существующие операторы:</h4>
+                {% for operator in operators %}
+                <div class="item-row">
+                    <span>{{ operator[1] }} ({{ operator[2] }})</span>
+                    <form action="/delete_operator/{{ operator[0] }}" method="post" style="display: inline;" onsubmit="return confirmDelete('оператора {{ operator[1] }}')">
+                        <button type="submit" class="delete-btn">✖</button>
+                    </form>
+                </div>
+                {% else %}
+                <p>Пока нет операторов</p>
+                {% endfor %}
+            </div>
+        </div>
+
+            <!-- Добавление станции -->
+            <div class="card">
+                <h3>🗺️ Добавить станцию</h3>
+                <form action="/add_station" method="post">
+                    <input type="text" name="station_name" placeholder="Название станции" required>
+                    <button type="submit">Добавить станцию</button>
+                </form>
+
+                <div class="item-list">
+                    <h4>Существующие станции:</h4>
+                    {% for station in stations %}
+                    <div class="item-row">
+                        <span>{{ station[1] }}</span>
+                        <form action="/delete_station/{{ station[0] }}" method="post" style="display: inline;" onsubmit="return confirmDelete('станцию {{ station[1] }}')">
+                            <button type="submit" class="delete-btn">✖</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <p>Пока нет станций</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="card">
+                <h3>⚡ Быстрые действия</h3>
+                <div class="quick-actions">
+                    <a href="/" target="_blank" class="btn-view">
+                        👀 Открыть турнирную таблицу
+                    </a>
+                    <button class="btn-small" onclick="window.location.reload()">
+                        🔄 Обновить страницу
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Предпросмотр текущего рейтинга -->
+        <h2>🏆 Текущий рейтинг команд</h2>
+        <div class="leaderboard-preview">
+            {% for team in team_totals %}
+                {% set position = loop.index %}
+                {% set medal_class = '' %}
+                {% if position == 1 %}
+                    {% set medal_class = 'gold' %}
+                {% elif position == 2 %}
+                    {% set medal_class = 'silver' %}
+                {% elif position == 3 %}
+                    {% set medal_class = 'bronze' %}
+                {% endif %}
+                
+                <div class="preview-row {{ medal_class }}">
+                    <div>
+                        <span class="preview-position">#{{ position }}</span>
+                        <span>{{ team.name }}</span>
+                    </div>
+                    <span class="preview-points">{{ team.points }} баллов</span>
+                </div>
+            {% else %}
+                <div class="preview-row">Пока нет команд</div>
+            {% endfor %}
+        </div>
+
+        <!-- Ввод баллов -->
+        <h2>📝 Ввод баллов</h2>
+        <div class="card" style="margin-bottom: 20px;">
+            <form action="/admin/save_score" method="post">
+                <select name="team_id" required>
+                    <option value="">Выберите команду</option>
+                    {% for team in teams %}
+                        <option value="{{ team[0] }}">{{ team[1] }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="station_id" required>
+                    <option value="">Выберите станцию</option>
+                    {% for station in stations %}
+                        <option value="{{ station[0] }}">{{ station[1] }}</option>
+                    {% endfor %}
+                </select>
+
+                <input type="number" name="points" placeholder="Количество баллов" required min="0">
+                <button type="submit">➕ Добавить баллы</button>
+            </form>
+            <p style="margin-top: 10px; color: #666; font-size: 0.9em;">
+                <small>ℹ️ Баллы будут добавлены к существующим (не перезапишутся)</small>
+            </p>
+        </div>
+        
+
+            <!-- Вычитание баллов (при ошибке) -->
+        <h2 style="margin-top: 30px;">⚠️ Корректировка баллов</h2>
+        <div class="card" style="margin-bottom: 20px; border-left: 4px solid #FF4800; background: #fff5f0;">
+            <h3 style="color: #FF4800;">➖ Вычитание баллов (при ошибке)</h3>
+            <form action="/admin/subtract_score" method="post" onsubmit="return validateSubtractForm()">
+                <select name="team_id" id="subtract_team_id" required>
+                    <option value="">Выберите команду</option>
+                    {% for team in teams %}
+                        <option value="{{ team[0] }}">{{ team[1] }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="station_id" id="subtract_station_id" required>
+                    <option value="">Выберите станцию</option>
+                    {% for station in stations %}
+                        <option value="{{ station[0] }}">{{ station[1] }}</option>
+                    {% endfor %}
+                </select>
+
+                <input type="number" name="points" id="subtract_points" placeholder="Количество баллов для вычитания" required min="1" step="1">
+                <button type="submit" style="background: #FF4800;" class="danger">➖ Вычесть баллы</button>
+            </form>
+            <p style="margin-top: 10px; color: #666; font-size: 0.9em;">
+                <small>⚠️ Используйте эту функцию только для исправления ошибок начисления</small>
+            </p>
+        </div>
+
+        <script>
+        function validateSubtractForm() {
+            const teamSelect = document.getElementById('subtract_team_id');
+            const stationSelect = document.getElementById('subtract_station_id');
+            const pointsInput = document.getElementById('subtract_points');
+            
+            // Проверяем, что все поля заполнены
+            if (!teamSelect.value) {
+                alert('Пожалуйста, выберите команду');
+                teamSelect.focus();
+                return false;
+            }
+            
+            if (!stationSelect.value) {
+                alert('Пожалуйста, выберите станцию');
+                stationSelect.focus();
+                return false;
+            }
+            
+            if (!pointsInput.value || pointsInput.value <= 0) {
+                alert('Пожалуйста, укажите количество баллов (больше 0)');
+                pointsInput.focus();
+                return false;
+            }
+            
+            const points = parseInt(pointsInput.value);
+            const teamName = teamSelect.options[teamSelect.selectedIndex].text;
+            const stationName = stationSelect.options[stationSelect.selectedIndex].text;
+            
+            // Отладка - выводим в консоль
+            console.log('Отправка формы:');
+            console.log('team_id:', teamSelect.value);
+            console.log('station_id:', stationSelect.value);
+            console.log('points:', points);
+            
+            return confirm(`Вы уверены, что хотите вычесть ${points} баллов у команды "${teamName}" на станции "${stationName}"?\n\nЭто действие нельзя отменить!`);
+        }
+        </script>
+
+        <!-- Добавьте также кнопку для быстрой корректировки в таблице баллов -->
+        <script>
+        function confirmSubtract() {
+            const teamSelect = document.getElementById('subtract_team_id');
+            const stationSelect = document.getElementById('subtract_station_id');
+            const points = document.querySelector('input[name="points"]').value;
+            
+            if (!teamSelect.value || !stationSelect.value || !points) {
+                alert('Пожалуйста, выберите команду, станцию и укажите количество баллов');
+                return false;
+            }
+            
+            const teamName = teamSelect.options[teamSelect.selectedIndex].text;
+            const stationName = stationSelect.options[stationSelect.selectedIndex].text;
+            
+            return confirm(`Вы уверены, что хотите вычесть ${points} баллов у команды "${teamName}" на станции "${stationName}"?\n\nЭто действие нельзя отменить!`);
+        }
+        </script>  
+        
+        
+
+        <!-- Текущие баллы -->
+        <h2>📊 Текущие баллы по станциям</h2>
+        <div class="scores-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Команда</th>
+                        <th>Станция</th>
+                        <th>Баллы</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for score in scores %}
+                    <tr>
+                        <td>{{ score[1] }}</td>
+                        <td>{{ score[2] }}</td>
+                        <td>{{ score[3] }}</td>
+                        <td>
+                            <!-- Только удаление всей записи -->
+                            <form action="/delete_score/{{ score[0] }}" method="post" style="display: inline;" onsubmit="return confirm('Удалить эту запись?');">
+                                <button type="submit" class="delete-btn" style="background: #35322F;">✖ Удалить запись</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center;">Пока нет данных о баллах</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Опасная зона - выборочное удаление -->
+        <h2 class="warning-text">⚠️ Опасная зона</h2>
+        <div class="card-grid">
+            <!-- Удалить все команды -->
+            <div class="card warning">
+                <h3>🗑️ Удалить все команды</h3>
+                <p>Будут удалены все команды и их баллы</p>
+                <form action="/delete_all_teams" method="post" onsubmit="return confirmDeleteAll('ВСЕ команды')">
+                    <button type="submit" class="danger">Удалить все команды</button>
+                </form>
+            </div>
+
+            <!-- Удалить все станции -->
+            <div class="card warning">
+                <h3>🗑️ Удалить все станции</h3>
+                <p>Будут удалены все станции и баллы на них</p>
+                <form action="/delete_all_stations" method="post" onsubmit="return confirmDeleteAll('ВСЕ станции')">
+                    <button type="submit" class="danger">Удалить все станции</button>
+                </form>
+            </div>
+
+            <!-- Удалить все баллы -->
+            <div class="card warning">
+                <h3>🗑️ Удалить все баллы</h3>
+                <p>Будут удалены все баллы, но команды и станции останутся</p>
+                <form action="/delete_all_scores" method="post" onsubmit="return confirmDeleteAll('ВСЕ баллы')">
+                    <button type="submit" class="danger">Удалить все баллы</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function confirmDelete(item) {
+            return confirm(`Вы уверены, что хотите удалить ${item}?`);
+        }
+
+        function confirmDeleteAll(item) {
+            return confirm(`⚠️ ВНИМАНИЕ!\n\nВы уверены, что хотите удалить ${item}?\nЭто действие нельзя отменить!`);
+        }
+    </script>
+    <script>
+// Проверяем, что формы отправляются правильно
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Страница загружена');
+    
+    // Добавляем обработчик на все формы
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            console.log('Форма отправляется:', this.action);
+            const formData = new FormData(this);
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+        });
+    });
+});
+</script>
+</body>
+</html>

@@ -43,12 +43,12 @@
         }
 
         .logo {
-            max-width: 80%;       /* 80% от ширины контейнера */
+            max-width: 80%;
             max-height: 180px;
             width: auto;
             height: auto;
             object-fit: contain;
-            margin: 20px 0;       /* отступы сверху и снизу */
+            margin: 20px 0;
         }
 
         .header::after {
@@ -73,32 +73,35 @@
             margin-bottom: 10px;
         }
 
-        .station-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .filter-btn {
-            padding: 8px 16px;
+        .filter-select {
+            width: 100%;
+            padding: 12px 15px;
             border: 2px solid #FF4800;
-            border-radius: 25px;
+            border-radius: 10px;
             background: white;
-            color: #FF4800;
+            color: #35322F;
+            font-size: 1em;
+            font-weight: 500;
             cursor: pointer;
-            font-weight: 600;
             transition: all 0.3s;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FF4800' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 15px;
         }
 
-        .filter-btn:hover {
-            background: #FF4800;
-            color: white;
+        .filter-select:hover, .filter-select:focus {
+            outline: none;
+            border-color: #FF4800;
+            box-shadow: 0 0 0 3px rgba(255, 72, 0, 0.1);
         }
 
-        .filter-btn.active {
-            background: #FF4800;
-            color: white;
+        .current-filter {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: right;
         }
 
         .info-bar {
@@ -253,12 +256,6 @@
             font-style: italic;
         }
 
-        .current-filter {
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #666;
-        }
-
         .error-message {
             color: #FF4800;
             text-align: center;
@@ -266,6 +263,16 @@
             background: #fff5f0;
             border-radius: 5px;
             margin: 10px 0;
+        }
+
+        .stations-count {
+            display: inline-block;
+            background: #FF4800;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 8px;
         }
     </style>
 </head>
@@ -276,11 +283,14 @@
         </div>
 
         <div class="filter-section">
-            <div class="filter-title">🔍 Фильтр по станциям:</div>
-            <div class="station-filters" id="stationFilters">
-                <button class="filter-btn active" data-station="all">Все станции</button>
-                <!-- Станции будут загружены динамически -->
+            <div class="filter-title">
+                🔍 Фильтр по станциям
+                <span class="stations-count" id="stationsCount">0</span>
             </div>
+            <select class="filter-select" id="stationSelect">
+                <option value="all">🏆 Все станции</option>
+                <!-- Станции будут загружены динамически -->
+            </select>
             <div class="current-filter" id="currentFilter">Показаны баллы со всех станций</div>
         </div>
 
@@ -299,8 +309,6 @@
         let autoRefreshInterval = null;
         let currentStationFilter = 'all';
         let stations = [];
-        let allTeamsData = [];
-        let lastUpdateTime = null;
 
         async function loadStations() {
             try {
@@ -310,35 +318,44 @@
                 }
                 stations = await response.json();
                 
-                const filterContainer = document.getElementById('stationFilters');
+                const select = document.getElementById('stationSelect');
+                const countSpan = document.getElementById('stationsCount');
+                
+                // Обновляем счетчик станций
+                countSpan.textContent = stations.length;
+                
+                // Очищаем все опции кроме первой
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                // Добавляем станции в выпадающий список
                 stations.forEach(station => {
-                    const btn = document.createElement('button');
-                    btn.className = 'filter-btn';
-                    btn.dataset.station = station.id;
-                    btn.textContent = station.name;
-                    btn.onclick = () => selectStation(station.id, station.name);
-                    filterContainer.appendChild(btn);
+                    const option = document.createElement('option');
+                    option.value = station.id;
+                    option.textContent = `📍 ${station.name}`;
+                    select.appendChild(option);
                 });
+                
             } catch (error) {
                 console.error('Ошибка при загрузке станций:', error);
-                const filterContainer = document.getElementById('stationFilters');
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'error-message';
-                errorMsg.textContent = 'Не удалось загрузить станции';
-                filterContainer.appendChild(errorMsg);
+                const select = document.getElementById('stationSelect');
+                const errorOption = document.createElement('option');
+                errorOption.disabled = true;
+                errorOption.textContent = '❌ Ошибка загрузки станций';
+                select.appendChild(errorOption);
             }
         }
 
-        function selectStation(stationId, stationName) {
+        function selectStation(stationId) {
             currentStationFilter = stationId;
             
-            // Обновляем активный класс у кнопок
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.station == stationId) {
-                    btn.classList.add('active');
-                }
-            });
+            // Находим название выбранной станции
+            let stationName = 'Все станции';
+            if (stationId !== 'all') {
+                const station = stations.find(s => s.id == stationId);
+                stationName = station ? station.name : 'Неизвестная станция';
+            }
             
             document.getElementById('currentFilter').textContent = 
                 stationId === 'all' ? 'Показаны баллы со всех станций' : `Показаны баллы только со станции: ${stationName}`;
@@ -347,6 +364,11 @@
             previousTeams = [];
             refreshData();
         }
+
+        // Обработчик изменения выпадающего списка
+        document.getElementById('stationSelect').addEventListener('change', function(e) {
+            selectStation(e.target.value);
+        });
 
         function initAudio() {
             if (!audioContext) {
@@ -398,9 +420,6 @@
                 }
                 const teams = await response.json();
                 
-                allTeamsData = teams;
-                lastUpdateTime = new Date();
-                
                 // Если есть предыдущие данные, проверяем изменения
                 if (previousTeams.length > 0) {
                     const changes = findPositionChanges(previousTeams, teams);
@@ -419,7 +438,7 @@
                 }
                 
                 document.getElementById('lastUpdate').textContent = 
-                    'Последнее обновление: ' + lastUpdateTime.toLocaleTimeString();
+                    'Последнее обновление: ' + new Date().toLocaleTimeString();
                 
                 previousTeams = JSON.parse(JSON.stringify(teams));
                 
@@ -435,14 +454,9 @@
             
             const changes = [];
             const oldPositions = {};
-            const newPositions = {};
             
             oldTeams.forEach((team, index) => {
                 oldPositions[team.id] = index;
-            });
-            
-            newTeams.forEach((team, index) => {
-                newPositions[team.id] = index;
             });
             
             newTeams.forEach((team, newIndex) => {
@@ -451,20 +465,7 @@
                 if (oldIndex !== undefined && oldIndex !== newIndex) {
                     changes.push({
                         id: team.id,
-                        direction: newIndex < oldIndex ? 'up' : 'down',
-                        oldPosition: oldIndex + 1,
-                        newPosition: newIndex + 1
-                    });
-                }
-            });
-            
-            newTeams.forEach((team, newIndex) => {
-                if (oldPositions[team.id] === undefined) {
-                    changes.push({
-                        id: team.id,
-                        direction: 'up',
-                        isNew: true,
-                        newPosition: newIndex + 1
+                        direction: newIndex < oldIndex ? 'up' : 'down'
                     });
                 }
             });
@@ -509,18 +510,11 @@
         }
 
         function setupAutoRefresh() {
-            // Запускаем автообновление каждые 5 секунд
             if (autoRefreshInterval) {
                 clearInterval(autoRefreshInterval);
             }
             autoRefreshInterval = setInterval(refreshData, 5000);
-            console.log('🔄 Автообновление запущено (интервал 5 сек)');
         }
-
-        // Добавляем обработчик для кнопки "Все станции"
-        document.querySelector('[data-station="all"]').onclick = () => {
-            selectStation('all', 'Все станции');
-        };
 
         // Инициализация
         window.onload = async () => {
